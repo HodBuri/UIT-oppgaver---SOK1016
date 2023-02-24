@@ -1,0 +1,672 @@
+---
+title: "Mappeopgave1 - SOK1016"
+format: pdf
+editor: visual
+echo: false
+warning : false
+---
+
+## I denne mappeoppgaven skal dere levere en deskriptiv analyse av nasjonalregnskapet.
+
+Formålet er å teste deres evne til å anvende makroøkonomisk teori til å age informative representasjoner av nasjonalregnskapstall, med meningsfulle enheter og relevante transformasjoner, og å diskutere utfordringer og begrensninger ved definisjoner. Oppgaven har tre minstekrav:
+
+**Dataene hentes fra:**
+
+-   SSB Tabell 09171: Produksjon og inntekt, etter næring. Ujustert og sesongjustert, 1978K1 - 2022K3 via SSB sin API-løsning.
+
+-   Det er også tillatt å hente tall fra andre datakilder.
+
+Besvarelsen skal ikke overstige 750 ord.
+
+```{r,message=FALSE, warning=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(rjstat)
+library(httr)
+library(cowplot)
+
+
+
+
+# A custome theme I use
+hod_theme_colours <- c("#ffa822","#1ac0c6","#ff6150","#30B66A","#B06AFF","#FF21E1")
+hod_theme <- function(alter_x_axis_colour = FALSE,
+                      ledgend_pos = "right") {
+  
+  colour_text <- "#b8aba7"
+  colour_text_light <- "#FFE9E3"
+  colour_box <- "#2b2b2b"
+  colour_lines <- "#827974"
+  colour_main <- "#E9D5DA"
+  colour_background <- "#2b2b2b"
+  colour_palette_standard <- c("#ffa822", "#ff6150","#1ac0c6")
+  colour_text_x_axis <- colour_text
+  
+  if(alter_x_axis_colour){
+     colour_text_x_axis <- c(colour_text,colour_text_light)
+  }
+    
+  theme(
+    # Border and margin
+    plot.margin = margin(0.4, 0.6, 0.4, 0.4, "cm"),
+    panel.border = element_rect(colour = colour_box, fill = NA, linetype = 2),
+    
+    # background
+    panel.background = element_rect(fill = colour_background),
+    plot.background = element_rect(fill = colour_background),
+    strip.background = element_rect(fill = colour_background),
+    
+    rect = element_rect(fill = colour_background, colour = "white",
+                        size = 0.5, linetype = 1),
+    
+    # grid
+    panel.grid.major.x = element_line(colour = colour_lines, linetype = 5, size = 0.25),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y =  element_line(colour = colour_lines, linetype = 5, size = 0.25),
+    panel.grid.minor.y = element_blank(),
+    axis.ticks = element_line(colour = colour_text),
+    
+    # line
+    line = element_line(colour = colour_palette_standard),
+    
+    # text
+    text = element_text(colour = colour_text, face = "italic", family = "mono"),
+    plot.title = element_text(colour = colour_text_light, face = "bold", family = "mono"),
+    plot.subtitle = element_text(colour = colour_text, family = "mono", hjust = 0.01),
+    plot.caption = element_text(colour = colour_text, face = "italic", family = "mono"),
+    axis.text.y = element_text(colour = colour_text, face = "italic", family = "mono"),
+    axis.text.x = element_text(colour = colour_text_x_axis, face = "italic", family = "mono"),
+    axis.title = element_text(colour = colour_text_light, family = "mono"),
+    plot.tag = element_text(colour = colour_text, face = "italic", family = "mono"),
+    legend.text = element_text(color = colour_text,face = "italic", family = "mono"),
+    legend.title = element_text(colour = colour_text, face = "italic", family = "mono"),
+    strip.text = element_text(colour = colour_text_light, face = "bold", family = "mono"),
+    
+    # legend
+    legend.position = ledgend_pos,
+    legend.key = element_rect(fill = colour_background)
+  )
+}
+```
+
+```{r}
+#Choose between
+# https://www.ssb.no/statbank/table/09174
+# https://www.ssb.no/statbank/table/09175
+
+url <- "https://data.ssb.no/api/v0/no/table/09171/"
+query <- '{
+  "query": [
+    {
+      "code": "NACE",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "nr23_6",
+          "pub2X01_02",
+          "pub2X03",
+          "pub2X05",
+          "nr2X06_09",
+          "pub2X06",
+          "pub2X09",
+          "nr23ind",
+          "pub2X10_12",
+          "nr2310",
+          "nr2312",
+          "pub2X13_15",
+          "nr2315",
+          "nr2316",
+          "pub2X18",
+          "pub2X19_21",
+          "nr2319",
+          "pub2X22_23",
+          "pub2X24",
+          "pub2X25_28",
+          "pub2X29_30",
+          "pub2X31_32",
+          "pub2X33",
+          "pub2X35",
+          "pub2X36_39",
+          "pub2X41_43",
+          "pub2X45_47",
+          "pub2X49B",
+          "pub2X50A",
+          "pub2X49A_52",
+          "pub2X53",
+          "pub2X55_56",
+          "pub2X58_63",
+          "pub2X64_66",
+          "pub2X68A",
+          "pub2X68B",
+          "pub2X69_75",
+          "pub2X77_82",
+          "pub2X84",
+          "pub2X85",
+          "pub2X86_88",
+          "pub2X90_97",
+          "nr24_5",
+          "nr24_",
+          "nr24sivil",
+          "nr2482",
+          "nr25_",
+          "nr23_6fn",
+          "nr23fn",
+          "nr23mark",
+          "nrimark"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat2"
+  }
+}'
+
+d.tmp <- url %>%
+  POST(body = query, encode = "json")
+df_raw <-  d.tmp %>%
+  content("text") %>%
+  fromJSONstat() %>%
+  as_tibble()
+
+url <- "https://data.ssb.no/api/v0/no/table/09174/"
+query <-'{
+  "query": [
+    {
+      "code": "NACE",
+      "selection": {
+        "filter": "vs:NRNaeringPubAgg",
+        "values": [
+          "nr23_6",
+          "pub2X01_02",
+          "pub2X03",
+          "pub2X05",
+          "nr2X06_09",
+          "pub2X06",
+          "pub2X09",
+          "nr23ind",
+          "pub2X10_12",
+          "nr2310",
+          "nr2312",
+          "pub2X13_15",
+          "nr2315",
+          "nr2316",
+          "pub2X18",
+          "pub2X19_21",
+          "nr2319",
+          "pub2X22_23",
+          "pub2X24",
+          "pub2X25_28",
+          "pub2X29_30",
+          "pub2X31_32",
+          "pub2X33",
+          "pub2X35",
+          "pub2X36_39",
+          "pub2X41_43",
+          "pub2X45_47",
+          "pub2X49B",
+          "pub2X50A",
+          "pub2X49A_52",
+          "pub2X53",
+          "pub2X55_56",
+          "pub2X58_63",
+          "pub2X64_66",
+          "pub2X68A",
+          "pub2X68B",
+          "pub2X69_75",
+          "pub2X77_82",
+          "pub2X84",
+          "pub2X85",
+          "pub2X86_88",
+          "pub2X90_97",
+          "nr24_5",
+          "nr24_",
+          "nr24sivil",
+          "nr2482",
+          "nr25_",
+          "nr23_6fn",
+          "nr23fn",
+          "nr23mark",
+          "nrimark"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat2"
+  }
+}'
+
+d.tmp <- url %>%
+  POST(body = query, encode = "json")
+df_raw2 <-  d.tmp %>%
+  content("text") %>%
+  fromJSONstat() %>%
+  as_tibble()
+```
+
+```{r}
+df1 <- df_raw %>% 
+  mutate(year = as.numeric(gsub('^|..$', '', kvartal)))%>% 
+  relocate(year, .after = kvartal)%>%
+  select(-c("kvartal"))%>%
+  group_by(næring,statistikkvariabel,year) %>% 
+  summarise(value = sum(value))
+
+df_raw2 <- df_raw2 %>%
+  mutate(year = as.numeric(år)) %>%
+  select(-c("år"))
+
+df_raw_combined <- rbind(df1,df_raw2)
+df_raw_combined <- df_raw_combined %>%
+  filter(year >= 2012)
+```
+
+```{r}
+df_pivot <- df_raw_combined %>% pivot_wider(names_from = statistikkvariabel, values_from = value)
+df <- df_pivot %>%
+  select(c(2, 3, 5, 10, 14, 17, 19, 21, 25, 29, 31))
+#Column: 2, 5, 10, 14, 17, 19, 21, 25, 29, 31,
+```
+
+```{r}
+df <- df %>%
+  mutate(`bruttonproduct per sysselsatt (10^3)` = (`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`*10^6)/(`Sysselsatte personer. Lønnstakere og selvstendige (1000 personer)`*10^3)/1000) %>%
+  mutate(`Lønn per sysselsatte (10^3. kr)` = (`Lønn (mill. kr)`*10^6)/(`Sysselsatte personer. Lønnstakere og selvstendige (1000 personer)`*10^3)/1000) %>%
+  mutate(`Lønnkost per sysselsatte (10^3)` = (`Lønnskostnader (mill. kr)`*10^6)/(`Sysselsatte personer. Lønnstakere og selvstendige (1000 personer)`*10^3)/1000)
+```
+
+```{r}
+graph_filter = c(
+  "næring", "year",
+  "Sysselsatte personer. Lønnstakere og selvstendige (1000 personer)",
+  "Produksjon i basisverdi. Løpende priser (mill. kr)",
+  "Bruttoprodukt i basisverdi. Løpende priser (mill. kr)",
+  "Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)",
+  "bruttonproduct per sysselsatt (10^3)",
+  "Lønn per sysselsatte (10^3. kr)",
+  "Lønnkost per sysselsatte (10^3)")
+
+df <- df %>%
+  relocate(`bruttonproduct per sysselsatt (10^3)`, .after = year) %>%
+  filter(!næring %in% c('Boligtjenester, egen bolig',
+                     'Totalt for næringer',
+                     'Markedsrettet virksomhet',
+                     'Ikke-markedsrettet virksomhet',
+                     'Fastlands-Norge'),
+         !grepl("¬",næring)) %>%
+  select(graph_filter)
+```
+
+```{r}
+df_2021 <- df %>%
+  filter(year ==  2021) %>%
+  pivot_longer(!c(næring,year),names_to = "StatesticType",values_to = "Values")
+```
+
+```{r}
+df_gdp <- df %>%
+  select(c(næring,year,`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`))%>%
+  group_by(year) %>% 
+  summarise(BNP = sum(`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`))
+
+næring_filter = c('Utvinning av råolje og naturgass, inkl. tjenester',
+                  "Utenriks sjøfart",
+                  "Rørtransport")
+
+df_gdp = merge(df_gdp,df %>%
+  filter(næring %in% næring_filter) %>%
+  group_by(year) %>% 
+  summarise(`diff` = sum(`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`)),'year')
+
+df_gdp["FN-BNP"] <- df_gdp %>%
+  summarise(BNP-diff)
+
+df_gdp <- df_gdp %>%
+  select(-c('diff')) %>%
+  pivot_longer(!c(year),names_to = "BNPType",values_to = "value")
+```
+
+\-\--
+
+### **Oppgave 1 - 40%**
+
+Lag to til fire figurer som sammenligninger sysselsetting, produksjon, bruttoprodukt, og bruttoprodukt per sysselsatt på tvers av næringer i 2021. Sysselsetting oppgis i antall årsverk, produksjon, bruttoprodukt, og bruttoprodukt per sysselsatt i løpende priser.
+
+\-\--
+
+**Figure 1** *- Sysselsatte personer i næring (2021)*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+
+plot_title = "Sysselsatte personer. Lønnstakere og selvstendige"
+plot_subtitle = ""
+plot_caption = "Source: https://www.ssb.no/statbank/table/09174"
+plot_label_y = ""
+plot_label_x = "Sysselsatte personer (1000 personer)"
+
+df_2021 %>%
+  filter(StatesticType == 'Sysselsatte personer. Lønnstakere og selvstendige (1000 personer)') %>%
+  ggplot(aes(x=Values, 
+             y=næring)) + 
+  geom_bar(position="dodge", 
+           stat="identity",
+           fill = hod_theme_colours[1])+
+  labs(title = plot_title,
+       subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+  scale_x_continuous(n.breaks = 6)+
+  hod_theme(ledgend_pos="none")+
+  theme(plot.title = element_text(hjust=2.1))
+```
+
+ved å sammenligne sysselsatte personer i forskjellige næringer kan vi se hvilken industri som ansetter flest og hvilken som ansetter minst. Slik man kan se her I figur 1 så er de fleste ansatt I "Helse- og omsorgstjenester".
+
+**Figure 2** *- Bruttoprodukt VS Produksjon (2021)*
+
+```{r  fig.height=7, fig.width=6.9}
+plot_title = "Bruttoprodukt VS Produksjon (2021)"
+plot_subtitle = ""
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+plot_label_y = ""
+plot_label_x = "Mill. kr"
+
+
+df_2021 %>%
+  filter(StatesticType %in% c('Bruttoprodukt i basisverdi. Løpende priser (mill. kr)',"Produksjon i basisverdi. Løpende priser (mill. kr)")) %>%
+  ggplot(aes(
+    x=Values, 
+    y=næring, 
+    fill=StatesticType))+
+  geom_bar(
+    position = "stack", 
+    stat="identity")+
+  labs(title = plot_title,
+       subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption) +
+  scale_color_manual(labels = c('BRUTTO',"PRODUCT"),
+                     values = c(hod_theme_colours[1],hod_theme_colours[2]))+
+  hod_theme(ledgend_pos = c(-0.5,1.09))+
+  theme(plot.title = element_text(hjust=3.5,vjust=20),
+        axis.title.x = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        plot.margin = margin(2, 0.5, 0.5, 0, "cm"),)
+```
+
+I denne figuren kan vi se bruttoprodukt vs produksjon i 2021 priser.
+
+**Figure 3** *- Bruttoprodukt per Sysselsatt (2021)*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "Bruttoprodukt per Sysselsatt"
+plot_subtitle = ""
+plot_caption = "Source: https://www.ssb.no/statbank/table/09174\n     https://www.ssb.no/statbank/table/09171"
+plot_label_y = ""
+plot_label_x = "Sysselsatte personer (1000 personer)"
+
+
+df_2021 %>%
+  filter(StatesticType == "bruttonproduct per sysselsatt (10^3)") %>%
+  ggplot(aes(
+    x=Values, 
+    y=næring,
+    fill = næring))+
+  geom_bar(
+    position = "dodge", 
+    stat="identity")+
+  labs(title = plot_title,
+       subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+  hod_theme(ledgend_pos = "")+
+  theme(plot.title = element_text(hjust=-5.6),axis.title.x = element_text(size = 8))
+```
+
+I Figur 3 ser vi bruttoprodukt per sysselsatt, og vi kan se at det er "Rørtransport" som sterket dominerer i dette. En anden som også ligger langt foran de andre er 'Råolje og naturgass". Det faktumet at de ligger så langt foran de andre kan man anta at det er få sysselsatt i de industriene forantil bruttoproduksjon.
+
+**Figure 4** *- Fastland Bruttoprodukt per Sysselsatt (2021)*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_subtitle = "Fastland bruttonproduct"
+
+df_2021 %>%
+  filter(StatesticType == "bruttonproduct per sysselsatt (10^3)",
+         !næring %in% c("Utvinning av råolje og naturgass, inkl. tjenester", "Rørtransport","Utenriks sjøfart")) %>%
+  ggplot(aes(
+    x=Values, 
+    y=næring,
+    fill = næring))+
+  geom_bar(
+    position = "dodge", 
+    stat="identity")+
+  labs(title = plot_title,
+       subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+  hod_theme(ledgend_pos = "")+
+  theme(plot.title = element_text(hjust=-4),
+        plot.subtitle = element_text(hjust=-4.5),
+        axis.title.x = element_text(size = 8))
+```
+
+Similert til Figur 3 denne figuren er også 'b*ruttoprodukt per Sysselsatt', men her har vi tatt ut olje, naturgass, rørtransport og utenriks sjøfart. Så med andre ord er dette som er tatt som fast land norge, og med dette får vi litt bedre oversikt*
+
+\-\--
+
+**Oppgave 2 - 10%**
+
+Diskuter hvorvidt bruttoprodukt per sysselsatt er et godt mål på produktivitet i offentlig sektor.
+
+\-\--
+
+Bruttoprodukt per sysselsatt er en måtte å se hvor mye verdi man får for hver ansatt, og med det kan man dra en konklusjon om hvor productiv en industri er. Det er også multiple måter og man kan bruke denne productivitet analyseringen til får å experimentere og lage predictions på hvordan man kan forbedre productiviteten til industrien. Som et eksempel kan man se hvordan teknologi kan på virke industrien med å se hvor mange ansatte en type teknologi kan replace.
+
+\-\--
+
+**Oppgave 3 - 40%**
+
+Lag figurer som viser bruttoprodukt per næring i både faste og løpende priser mellom 2012 og 2021.
+
+Diskuter hvorvidt det er noen næringer hvor variasjon i produktprisene har særlig stor innvirkning på verdien av bruttoproduksjonen.
+
+\-\--
+
+**Figure 5** *- Bruttoprodukt, Løpende vs Fast(2020) priser (OVERVIEW)*
+
+```{r  fig.height=10, fig.width=6.9}
+
+plot_title = "Bruttoprodukt, Løpende vs Fast(2020) priser"
+plot_subtitle ="Ikke Includert - 'råolje og naturgass'"
+plot_label_x = "Year"
+plot_label_y = "mil. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+df %>% 
+  filter(næring != 'Utvinning av råolje og naturgass, inkl. tjenester') %>%
+    ggplot(aes(x=year,
+             y=`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`,
+             color = næring ))+
+    geom_line(linetype = "solid",linewidth = 1)+
+    geom_line(aes(y=`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`,color = næring),
+              linetype = "dashed",)+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_discrete(name="Næring")+
+    hod_theme(ledgend_pos = "bottom") +
+  guides(color = guide_legend(nrow = 6, byrow = TRUE, direction = 'vertical'))
+```
+
+I denne figuren kan man se en generel overview over alle fastlands industrier.
+
+**Figure 6** *Bruttoprodukt, Løpende vs Fast(2020) priser ( top næring - råolje )*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "Bruttoprodukt, Løpende vs Fast(2020) priser"
+plot_subtitle ="For 'Utvinning av råolje og naturgass, inkl. tjenester'"
+plot_label_x = "Year"
+plot_label_y = "mil. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+df %>% 
+  filter(næring == 'Utvinning av råolje og naturgass, inkl. tjenester') %>%
+    ggplot(aes(x=year,
+             y=`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`,
+             color = "1" ))+
+    geom_line(linetype = "solid",linewidth = 1)+
+    geom_line(aes(y=`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`,color = "2"),
+              linetype = "dashed",)+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_y_continuous(breaks = c(360000,400000,450000,500000,600000,700000,1000000,2000000),trans='log2')+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_manual(labels = c("Løpende",'Fast(2020)'),
+                     values = c(hod_theme_colours[2],hod_theme_colours[3]))+
+    hod_theme(ledgend_pos = "bottom") +
+    guides(colour=guide_legend(title=""))
+```
+
+**Figure 7** *Bruttoprodukt, Løpende vs Fast(2020) priser ( top næring - Helse )*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "Bruttoprodukt, Løpende vs Fast(2020) priser"
+plot_subtitle ="For 'Helse- og omsorgstjenester'"
+plot_label_x = "Year"
+plot_label_y = "mil. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+df %>% 
+  filter(næring == 'Helse- og omsorgstjenester') %>%
+    ggplot(aes(x=year,
+             y=`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`,
+             color = "1" ))+
+    geom_line(linetype = "solid",linewidth = 1)+
+    geom_line(aes(y=`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`,color = "2"),
+              linetype = "solid",)+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_y_continuous(n.breaks = 10)+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_manual(labels = c("Løpende",'Fast(2020)'),
+                     values = c(hod_theme_colours[2],hod_theme_colours[3]))+
+    hod_theme(ledgend_pos = "bottom") +
+    guides(colour=guide_legend(title=""))
+```
+
+**Figure 8** *Bruttoprodukt, Løpende vs Fast(2020) priser ( top næring - varehandel )*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "Bruttoprodukt, Løpende vs Fast(2020) priser"
+plot_subtitle ="For 'Varehandel og reparasjon av motorvogner'"
+plot_label_x = "Year"
+plot_label_y = "mil. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+df %>% 
+  filter(næring == 'Varehandel og reparasjon av motorvogner') %>%
+    ggplot(aes(x=year,
+             y=`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`,
+             color = "1" ))+
+    geom_line(linetype = "solid",linewidth = 1)+
+    geom_line(aes(y=`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`,color = "2"),
+              linetype = "solid",)+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_y_continuous(n.breaks = 10)+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_manual(labels = c("Løpende",'Fast(2020)'),
+                     values = c(hod_theme_colours[2],hod_theme_colours[3]))+
+    hod_theme(ledgend_pos = "bottom") +
+    guides(colour=guide_legend(title=""))
+```
+
+**Figure 9** *Bruttoprodukt, Løpende vs Fast(2020) priser ( top næring - industri)*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "Bruttoprodukt, Løpende vs Fast(2020) priser"
+plot_subtitle ="For 'Industri'"
+plot_label_x = "Year"
+plot_label_y = "mil. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+df %>% 
+  filter(næring == 'Industri') %>%
+    ggplot(aes(x=year,
+             y=`Bruttoprodukt i basisverdi. Løpende priser (mill. kr)`,
+             color = "1" ))+
+    geom_line(linetype = "solid",linewidth = 1)+
+    geom_line(aes(y=`Bruttoprodukt i basisverdi. Faste 2020-priser (mill. kr)`,color = "2"),
+              linetype = "solid",)+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_y_continuous(n.breaks = 10)+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_manual(labels = c("Løpende",'Fast(2020)'),
+                     values = c(hod_theme_colours[2],hod_theme_colours[3]))+
+    hod_theme(ledgend_pos = "bottom") +
+    guides(colour=guide_legend(title=""))
+
+```
+
+Figur 6-9 er flere fugerer der vi ser spesifict på en industri.
+
+Grunner til at noen næriner er mer avhengi til produktprisene en andre kommer ned til etterspørsel og tilbud heller konkuranse ofte. Som exemple hvis man ser på olje og gass markede så kan det være høy variasjon i markede fra år til år, spesielt når man tenker at ting som olje og gass er nokka som er avhengig av eksport og det internarsjonale markedet. Man kan også tenke på at mange land lager lover or regulation som minimerer olje og gass bruk som vil påvrike markede i en negativ rettning. Men så kan man se ka som skjedd med olje og gass priser når en av main produsentene stoppet og levere.
+
+Man har også markeder som er mindre påvirket av dette, og det er ofte markeder som enten er et monopoly heller som er nødvendige varer, slik som mat, vann og strøm.
+
+\-\--
+
+**Oppgave 4 - 10%**
+
+I norsk sammenheng skiller vi ofte mellom brutto nasjonal produkt (BNP) og brutto nasjonalprodukt på fastlandet (FN-BNP). Hvilke næringer er unntatt fra FN-BNP, og hvorfor gjøres dette? Knytt gjerne besvarelsen til funnene fra oppgave 3
+
+\-\--
+
+**Figure 10** *- BNP vs FN-BNP*
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+plot_title = "BNP vs FN-BNP (Faste 2020-priser)"
+plot_subtitle ="FN-BNP = fastlands Norge Brutto National Produkt"
+plot_label_x = "Year"
+plot_label_y = "mill. kr"
+plot_caption = "Source: https://www.ssb.no/statbank/table/09171"
+
+suppressWarnings({
+df_gdp %>% 
+    ggplot(aes(x=year,
+             y=value,
+             color = BNPType ))+
+    geom_line()+
+    labs(title = plot_title,
+         subtitle = plot_subtitle,
+         y = plot_label_y,
+         x = plot_label_x,
+         caption = plot_caption)+
+    scale_y_continuous(n.breaks = 10)+
+    scale_x_continuous(n.breaks = 10)+
+    scale_color_discrete(name="BNP Type")+
+    hod_theme(ledgend_pos = "right")})
+```
+
+Grunnen til at Norge har to BNP systemer er fordi intektene fra olje og gass industrien er så store at hvis Norge ikke hadde disse resursjene så hadde BNPen sett veldig anderledes ut. Med å exclude oljevirksomheten og utenriks sjøfart fra BNP så kan man også bedre samenligne samenligne norge til andre land. Nokka som også kan bli gjort til BNP er å justere det etter price level, som kan bli gjor med en process kalt 'purchasing power parity adjustment', som justerer ting etter 'cost of living' og 'relative value'.
