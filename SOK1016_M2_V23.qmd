@@ -1,0 +1,288 @@
+---
+title: "Mappeopgave2 - SOK1016"
+format: pdf
+editor: visual
+echo: false
+warning : false
+---
+
+```{r,message=FALSE, warning=FALSE}
+rm(list = ls())
+library(tidyverse)
+
+
+hod_theme_colours <- c("#ffa822","#1ac0c6","#ff6150","#30B66A","#B06AFF","#FF21E1")
+
+hod_theme <- function(alter_x_axis_colour = FALSE,
+                      ledgend_pos = "right") {
+  
+  colour_text <- "#b8aba7"
+  colour_text_light <- "#FFE9E3"
+  colour_box <- "#2b2b2b"
+  colour_lines <- "#827974"
+  colour_main <- "#E9D5DA"
+  colour_background <- "#2b2b2b"
+  colour_palette_standard <- c("#ffa822", "#ff6150","#1ac0c6")
+  colour_text_x_axis <- colour_text
+  
+  if(alter_x_axis_colour){
+     colour_text_x_axis <- c(colour_text,colour_text_light)
+  }
+    
+  theme(
+    # Border and margin
+    plot.margin = margin(0.4, 0.6, 0.4, 0.4, "cm"),
+    panel.border = element_rect(colour = colour_box, fill = NA, linetype = 2),
+    
+    # background
+    panel.background = element_rect(fill = colour_background),
+    plot.background = element_rect(fill = colour_background),
+    strip.background = element_rect(fill = colour_background),
+    
+    rect = element_rect(fill = colour_background, colour = "white",
+                        size = 0.5, linetype = 1),
+    
+    # grid
+    panel.grid.major.x = element_line(colour = colour_lines, linetype = 5, size = 0.25),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y =  element_line(colour = colour_lines, linetype = 5, size = 0.25),
+    panel.grid.minor.y = element_blank(),
+    axis.ticks = element_line(colour = colour_text),
+    
+    # line
+    line = element_line(colour = colour_palette_standard),
+    
+    # text
+    text = element_text(colour = colour_text, face = "italic", family = "mono"),
+    plot.title = element_text(colour = colour_text_light, face = "bold", family = "mono"),
+    plot.subtitle = element_text(colour = colour_text, family = "mono", hjust = 0.01),
+    plot.caption = element_text(colour = colour_text, face = "italic", family = "mono"),
+    axis.text.y = element_text(colour = colour_text, face = "italic", family = "mono"),
+    axis.text.x = element_text(colour = colour_text_x_axis, face = "italic", family = "mono"),
+    axis.title = element_text(colour = colour_text_light, family = "mono"),
+    plot.tag = element_text(colour = colour_text, face = "italic", family = "mono"),
+    legend.text = element_text(color = colour_text,face = "italic", family = "mono"),
+    legend.title = element_text(colour = colour_text, face = "italic", family = "mono"),
+    strip.text = element_text(colour = colour_text_light, face = "bold", family = "mono"),
+    
+    # legend
+    legend.position = ledgend_pos,
+    legend.key = element_rect(fill = colour_background)
+  )
+}
+```
+
+## Oppgave 1
+
+$$(1)Investemnt-saving-curve\\y − y_n = z − \alpha(𝑖 − \pi_e)$$
+
+$$(2)Taylor-rule/RR-kurven/LM-curve\\i = \phi_y(y − y_n) + \phi_\pi(\pi − \pi^∗)$$
+
+$$(3)Phillips-Curve\\\pi = \pi_e + \beta(y − y_n)$$
+
+### oppgave 1a
+
+Hvilke egenskaper ved økonomien bestemmer verdien på parameteren 𝛼?
+
+------------------------------------------------------------------------
+
+***Svar:***
+
+$\alpha = \Delta{y}/\Delta{i}$, og siden y = GDP, og i = Nominell rente. Spesifikt så viser det hvor sensetive output gapet t GDP er til nominell rente endringer.
+
+Noen ting som kan påvirke 𝛼 er:
+
+-   Investment og consumtion response
+
+-   Teknologi
+
+-   Exchange rate og andre ting som påvirker exchange rate
+
+-   Priser og lønn, Arbeidskraft
+
+### oppgave 1b
+
+Anta at inflasjonsforventningene øker $\Delta\pi_e > 0$ og beregn fortegnet på endringene i rente, produksjon og prisvekst, $\Delta{i}$ $\Delta{y}$ og $\Delta{\pi}$. Vis at produksjonen faller kun hvis $\phi_\pi > 1$. Hva er den økonomiske intuisjonen for denne restriksjonen?
+
+------------------------------------------------------------------------
+
+***Svar:***
+
+Siden inflasjonsforventningene øker $\Delta{\pi_e} > 0$, det påvirker sentralbankens respons og dermed renten og prisveksten. Da kan vi anta at prisveksten er positivt påvirket av inflasjonsforventningene $\beta > 0$. Dermed vil $\Delta{\pi} > 0$. Og siden $\Delta{\pi} > 0$ og $\phi_\pi > 0$, vil sentralbanken vil øke renten når inflasjonen øker. Som betyer renten økers $\Delta{i} > 0$. Fortegnene for endringene blir da:
+
+$\Delta{i} > 0$ (renten øker)
+
+$\Delta{\pi} > 0$ (prisveksten øker)
+
+For å finne fortegnet på $\Delta{y}$:
+
+$\Delta{y} = \Delta{z} - \alpha(\Delta{i} - \Delta{\pi_e})$
+
+Siden vi ikke har informasjon om $\Delta{z}$, vil vi anta at $\Delta{z} = 0$.
+
+Da får vi:
+
+$\Delta{y} = -\alpha(\Delta{i} - \Delta{\pi_e})$
+
+For å finne fortegnet på endringen i produksjonen $\Delta{y}$, må vi sammenligne endringene i renten $\Delta{i}$ og inflasjonsforventningene $\Delta{\pi_e}$.
+
+Vi kan uttrykke $\Delta{i}$ som en funksjon av endringen i produksjonen $\Delta{y}$ og endringen i inflasjonen $\Delta{\pi}$:
+
+$\Delta{i} = \phi_y(\Delta{y}) + \phi_\pi(\Delta{\pi})$
+
+Erstatt $\Delta{y}$ fra $\Delta{y} = \Delta{z} - \alpha(\Delta{i} - \Delta{\pi_e})$:
+
+$\Delta{i} = \phi_y(\Delta{z} - \alpha(\Delta{i} - \Delta{\pi_e})) + \phi_\pi(\Delta{\pi})$
+
+Forenkle ligningen med å samle alle leddene som inneholder $\Delta{i}$ på venstre siden og de andre på høyre siden:
+
+$\Delta{i} = \phi_y\Delta{z} - \phi_y\alpha(\Delta{i} - \Delta{\pi_e}) + \phi_\pi\Delta{\pi}$
+
+$\Delta{i} = \phi_y\Delta{z} - \phi_y\alpha\Delta{i} + \phi_y\alpha\Delta{\pi_e} + \phi_\pi\Delta\pi$
+
+$\Delta{i} + \phi_y\alpha\Delta{i} = \phi_y\Delta{z} + \phi_y\alpha\Delta\pi_e + \phi_\pi\Delta\pi$
+
+$\Delta{i}(1 + \phi_y\alpha) = \phi_y\Delta{z} + \phi_y\alpha\Delta{\pi_e} + \phi_\pi\Delta\pi$
+
+For å vise at produksjonen faller $\Delta{y} < 0$ kun hvis $\phi_\pi > 1$, må vi vise at endring i rentene er støre en endring i inflasjonsforventningene $\Delta{i} > \Delta{\pi_e}$ under denne betingelsen.
+
+$\Delta{i} = (\phi_y\Delta{z} + \phi_y\alpha\Delta{\pi_e} + \phi_pi\Delta{\pi}) / (1 + \phi_y\alpha)$
+
+Hvis $\phi_\pi > 1$, vil $\phi_\pi\Delta{\pi}$ dominere over de andre leddene i telleren, og siden $\phi_y\alpha > 0$, vil $\Delta{i} > \Delta{\pi_e}$. Dermed, når $\Delta{i} > \Delta{\pi_e}$:
+
+$\Delta{y} = -\alpha(\Delta{i} - \Delta{\pi_e}) < 0$
+
+Så produksjonen faller $(\Delta{y} < 0)$ kun hvis $\phi_\pi > 1$
+
+Den økonomiske intuisjonen for denne restriksjonen er at når $\phi_\pi > 1$, er sentralbanken mer aggressiv i sin resopns til inflasjon. D innebærer at sentralbanken vil øke renten når inflasjonsforventningene øker. Det fører til en større økning i renten en økningen i inflasjonsforventningene $\Delta{i} > \Delta{\pi_e}$, noe som reduserer investeringene og dermed fører til en reduksjon i produksjonen.
+
+heller lettere sakt så betyr at sentralbanken prioriterer å bekjempe inflasjon, selv om det betyr at produksjonen må reduseres. Så, når sentralbanken reagerer kraftig på inflasjon med $\phi_\pi > 1$, vil følgende endringer i økonomiske variabler observeres:
+
+Renten øker: $\Delta{i} > 0$
+
+Prisveksten øker: $\Delta{\pi} > 0$
+
+Produksjonen faller: $\Delta{y} < 0$
+
+## Oppgave 2
+
+Betrakt en rekursiv ligning for adaptive inflasjonsforventninger,
+
+$$(3∗) 𝜋_𝑡 = 𝜋^𝑒_𝑡 + 𝛽(𝑦_𝑡 − 𝑦_𝑛).$$
+
+Den sier at prisveksten i periode 𝑡 er gitt ved forventet prisvekst $𝜋^𝑒_𝑡$ og øker i produksjonsgapet $𝑦 − 𝑦_𝑛$ med en faktor $𝛽 > 0$. Anta nå at det er adaptive forventninger,
+
+$$(4) 𝜋^𝑒_𝑡 = 𝜋_𝑡−1$$
+
+og for enkelthets skyld at tiden begynte ved en $𝑡 = 0$. Vis at $𝜋_𝜏 = ∑^𝜏_{𝑠=0} 𝛽(𝑦_𝑠 − 𝑦_𝑛)$ for $0 < 𝜏 < ∞$. Hva ville skje med prisveksten dersom ekspansiv økonomisk politikk forsøkte å holde et positivt produksjonsgap over tid, $𝑦_𝑡 > 𝑦_𝑛$ over mange perioder? Er adaptive forventninger en rimelig antagelse om forventninger i en situasjon med vedvarende økning i prisveksten?
+
+------------------------------------------------------------------------
+
+***Svar:***
+
+$\pi_t = \pi_t−1 + \beta(y_t − y_n).$
+
+Base case $(t = 1)$:
+
+$\pi_1 = \pi_0 + \beta(y_1 − y_n)$.
+
+Induktivt antagelse $(t = 𝑘)$:
+
+$\pi_k = \sum^{k}_{s=0} \beta(y_s − y_n).$
+
+Induktivt trinn $(t = k + 1)$:
+
+$\pi_k+1 = \pi_k + \beta(y_k+1 − y_n) = \sum^{k}_{s=0} \beta(y_s − y_n) + \beta(y_k+1 − y_n) = \sum^{k+1}_{s=0} \beta(y_s − y_n)$.
+
+Siden både base case og induktivt trinn er oppfylt, kan vi konkludere at $\pi_t = \sum^t_{s=0} \beta(y_s − y_n)$ for $0 < t < \infty$.
+
+Hvis ekspansiv økonomisk politikk forsøkte å holde et positivt produksjonsgap over tid, $y_t > y_n$ over mange perioder, ville prisveksten øke over tid siden inflasjonen er positivt korrelert med produksjonsgapet.
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+# Create sample data
+time <- seq(1, 20, 1)
+yt <- c(100, 102, 105, 108, 112, 116, 120, 124, 129, 134, 139, 144, 149, 154, 159, 164, 169, 174, 179, 184)
+yn <- c(100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119)
+inflation <- c(2, 2.1, 2.3, 2.6, 3, 3.4, 3.8, 4.2, 4.7, 5.2, 5.7, 6.2, 6.7, 7.2, 7.7, 8.2, 8.7, 9.2, 9.7, 10.2)
+
+data <- data.frame(time, yt, yn, inflation)
+
+# Create a ggplot object
+p <- ggplot(data, aes(time))
+
+# Add lines for yt, yn, and inflation
+p <- p + geom_line(aes(y = yt, color = "Actual Output (yt)")) +
+          geom_line(aes(y = yn, color = "Potential Output (yn)")) +
+          geom_line(aes(y = inflation, color = "Inflation")) +
+          scale_y_continuous(sec.axis = sec_axis(~ ., name = "Inflation"))
+
+# Add labels and a legend
+p <- p + labs(title = "Actual Output, Potential Output, and Inflation over Time",
+              x = "Time", y = "Output",
+              color = "Variable")+hod_theme()
+
+# Display the graph
+print(p)
+```
+
+Når det kommer til adaptive forventninger er en rimelig antagelse i en situasjon med ved varende økning i prisveksten, er det noen argumenter for og imot.
+
+På en siden kan adaptive forventninger være en rimelig antagelse i enkelte tilfeller spesielt i kortere tids perioder, siden økonomiske aktører ofte justerer sine forventninger basert på ny data.
+
+På den andre siden kan adaptive forventninger være en begrenset antagelse i situasjoner med vedvarende økning i prisveksten. Økonomiske aktører kan også bruke rasjonelle forventninger, som innebærer at de tar hensyn til all tilgjengelig informasjon, inkludert strukturelle endringer i økonomien og økonomisk politikk. Dermed kan aktørene i en slik situasjon forvente at myndighetene vil gripe inn for å begrense prisveksten og justere sine forventninger deretter.
+
+Så, selv om adaptive forventninger kan være en rimelig antagelse i noen situasjoner, er det viktig å vurdere andre typer forventninger og aktørers atferd for å få en mer helhetlig forståelse av prisvekstens dynamikk over tid, spesielt i situasjoner med vedvarende økning i prisveksten.
+
+## Oppgave 3
+
+Den amerikanske makroøkonomen Michael Woodford har sagt at "ikke bare har forventninger
+
+om \[pengepolitikken\] betydning \[...\] men det er fint lite annet som faktisk er av betydning."
+
+Hva slags forventninger har norske husholdninger, næringslivsledere, og økonomer om prisveksten i Norge på kort og mellomlang sikt? På oppdrag fra Norges Bank gjennomfører Ipsos en
+
+spørreundersøkelse for å finne ut av dette, tilgjengelig her.
+
+Diskuter, med utgangspunkt i resultatene fra spørreundersøkelsen, hvorvidt økt prisvekst har
+
+blitt lagt merke til siden 2019, og om forventet fremtidig prisvekst har økt.
+
+------------------------------------------------------------------------
+
+***Svar:***
+
+Etter dataen fra Norges Bank så virker det som at forventningene til prisstigning har økt i de siste årene, spesielt siden 2021. Undersøkelsen viser at økonomier forventer 4.3%, og næringslivsledere forventer 6.7% økning, og 89.6% av husholdninger forventer en økning på 6%, i varer og tjenester i 1. kvartal 2023 på 12 måneder. Dette er en betydelig økning sammenlignet med 2019 og 2021. Dataene viser også at folk forventer lavere vekst over tid, for eksempel en 2,7% økning i løpet av fem år ifølge økonomer og en 5,4% økning i løpet av to år ifølge husholdninger.
+
+```{r fig.asp = 0.6, fig.height=1, fig.width=8}
+time <- seq(2019, 2023, 1)
+econ_short <- c(2.3, 2.1, 2.375, 3.9, 4.3)
+busin_lead_short <- c(2.55, 2.475, 3.275, 5.525, 6.4)
+households_short <- c(2.1, 2.075, 2.325, 3.8, 6.0)
+
+econ_mid <- c(2.25, 2.075, 2.325, 3.1, 3.2)
+busin_lead_mid <- c(2.95, 3.15, 3.725, 5.025, 6.5)
+households_mid <- c(3.225, 3.45, 3.725, 4.275, 5.4)
+
+econ_long <- c(2.25, 2.05, 2.125, 2.475, 2.7)
+busin_lead_long <- c(NA, NA, NA, NA, NA)
+households_long <- c(NA, NA, NA, NA, NA)
+
+category <- c(rep("econ", 15), rep("busin_lead", 15), rep("households", 15))
+type <- c(rep("Short", 5), rep("Mid", 5), rep("Long", 5))
+values <- c(econ_short, econ_mid, econ_long, busin_lead_short, busin_lead_mid, busin_lead_long, households_short, households_mid, households_long)
+time <- rep(time, 9)
+
+data <- data.frame(time, category, type, values)
+p <- ggplot(data, aes(time, values, linetype = type, color = category))
+p <- p + geom_line() + scale_linetype_manual(values = c("Short" = "solid", "Mid" = "longdash", "Long" = "dotted"))
+p <- p + labs(title = "Forventet Pris Vekst",
+              x = "Year", y = "Forventet Pris Vekst",
+              color = "Category", linetype = "Type") + hod_theme()
+
+print(p)
+
+```
+
+Som vi ser på graphen så ser vi at all aktører er enig om at de forventer en prisøkning, og med lengere tid (type: short = 1 år, mid = 2-3 år, long = 5 år) ser vi at de alle har forventninger som blir lavere på lengere tid, med unntak til næringslivsledere (busin_lead) som er nesten lik når det kommer til short term og mellomlang sikt.
+
+Undersøkelsen viser altså at det har vært en økning i bevisstheten rundt prisstigning og forventningene knyttet til dette siden 2019.
